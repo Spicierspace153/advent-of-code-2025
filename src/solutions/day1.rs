@@ -18,8 +18,8 @@ pub fn run() {
 
         // update the final position
         pos = match dir {
-            'L' | 'l' => (start - dist).rem_euclid(100),
-            'R' | 'r' => (start + dist).rem_euclid(100),
+            'L'  => (start - dist).rem_euclid(100),
+            'R' => (start + dist).rem_euclid(100),
             _ => panic!("Unknown direction"),
         };
     }
@@ -29,8 +29,8 @@ pub fn run() {
 
 fn count_zero_hits(start: i32, dist: i32, dir: char) -> i32 {
     let sign = match dir {
-        'L' | 'l' => -1,
-        'R' | 'r' =>  1,
+        'L'  => -1,
+        'R'  =>  1,
         _ => panic!("Unknown dir"),
     };
     let mut steps_to_zero = ((0 - start).rem_euclid(100) + 100) % 100;
