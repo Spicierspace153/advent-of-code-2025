@@ -15,7 +15,7 @@ pub struct Cell {
 pub struct Grid {
     pub width: usize,
     pub height: usize,
-    pub cells: Vec<Cell>, 
+    pub cells: Vec<Cell>,
 }
 
 impl Grid {
@@ -51,7 +51,7 @@ impl Grid {
                 }
 
                 let (r, c) = cell.pos;
-                let neighbors = Self::DIRS.iter().filter(|&&(dx, dy)| {
+                let neighbors = Self::DIRS.iter().filter(|(dx, dy)| {
                     let nr = r as i32 + dx;
                     let nc = c as i32 + dy;
 
