@@ -28,17 +28,15 @@ impl Grid {
     pub fn new(input: Vec<Vec<char>>) -> Self {
         let height = input.len();
         let width = input[0].len();
-        let mut cells = Vec::with_capacity(width * height);
 
-        for r in 0..height {
-            for c in 0..width {
-                let cell_type = match input[r][c] {
-                    '@' => CellType::Towel,
-                    _ => CellType::Empty,
-                };
-                cells.push(Cell { pos: (r, c), cell_type });
-            }
-        }
+        let cells = input.iter().enumerate().flat_map(|(r, row)| {
+            row.iter()
+                .enumerate()
+                .map(move |(c, &ch)| {
+                let cell_type = if ch == '@' { CellType::Towel } else { CellType::Empty };
+                Cell { pos: (r, c), cell_type }
+            })
+        }).collect();
 
         Grid { width, height, cells }
     }
@@ -51,17 +49,20 @@ impl Grid {
                 }
 
                 let (r, c) = cell.pos;
-                let neighbors = Self::DIRS.iter().filter(|(dx, dy)| {
-                    let nr = r as i32 + dx;
-                    let nc = c as i32 + dy;
 
-                    if nr < 0 || nr >= self.height as i32 || nc < 0 || nc >= self.width as i32 {
-                        return false;
-                    }
+                let neighbors = Self::DIRS.iter()
+                    .filter(|&&(dx, dy)| {
+                        let nr = r as i32 + dx;
+                        let nc = c as i32 + dy;
 
-                    let nidx = nr as usize * self.width + nc as usize;
-                    self.cells[nidx].cell_type == CellType::Towel
-                }).count();
+                        if nr < 0 || nr >= self.height as i32 || nc < 0 || nc >= self.width as i32 {
+                            return false;
+                        }
+
+                        let nidx = nr as usize * self.width + nc as usize;
+                        self.cells[nidx].cell_type == CellType::Towel
+                    })
+                    .count();
 
                 if neighbors < 4 { Some(idx) } else { None }
             })
@@ -71,14 +72,9 @@ impl Grid {
     pub fn remove_all_accessible(&mut self) -> usize {
         let mut total_removed = 0;
 
-        loop {
+        while !self.find_accessible().is_empty() {
             let to_remove = self.find_accessible();
-            if to_remove.is_empty() { break; }
-
-            for idx in &to_remove {
-                self.cells[*idx].cell_type = CellType::Empty;
-            }
-
+            to_remove.iter().for_each(|&idx| self.cells[idx].cell_type = CellType::Empty);
             total_removed += to_remove.len();
         }
 
