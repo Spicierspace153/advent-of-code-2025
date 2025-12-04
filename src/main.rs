@@ -1,5 +1,5 @@
 use std::env;
-use crate::solutions::{day1, day2};
+use crate::solutions::{day1, day2, day3};
 
 mod solutions;
 mod utils;
@@ -20,6 +20,7 @@ fn main() {
 
         1 => day1::run(),
         2 => day2::run(),
+        3 => day3::run(),
         _ => println!("Eric didnt do that day yet!"),
     }
 }
