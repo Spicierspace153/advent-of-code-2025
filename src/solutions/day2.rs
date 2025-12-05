@@ -5,7 +5,6 @@ use crate::utils::file_utils::*;
 pub fn run(){
 
     let input = read_file("src/Problems/day2.txt");
-    let start = Instant::now();
 
     let ranges : Vec<String> = input
         .split(',')
@@ -31,7 +30,6 @@ pub fn run(){
         }
     }
     println!("Total: {}", total);
-    println!("Total runtime: {:?}", start.elapsed());
 }
 
 fn is_valid(n: i64) -> bool{

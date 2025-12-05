@@ -6,49 +6,46 @@ pub fn run() {
     let mut ranges = Vec::<(i64, i64)>::new();
     let mut values = Vec::<i64>::new();
 
-    for line in lines.into_iter().map(|l| l.trim().to_string()).filter(|l| !l.is_empty()) {
+    for line in lines.iter().map(|l| l.trim()).filter(|l| !l.is_empty()) {
         if let Some((a, b)) = line.split_once('-') {
-            ranges.push((a.trim().parse().unwrap(), b.trim().parse().unwrap()));
+            let start: i64 = a.trim().parse().unwrap();
+            let end: i64 = b.trim().parse().unwrap();
+            ranges.push((start, end));
         } else {
             values.push(line.parse().unwrap());
         }
     }
 
-    // sort values
+    // Sort ranges by start value
     ranges.sort_by_key(|r| r.0);
 
-    // new list to merge it all together
     let mut merged = Vec::<(i64, i64)>::new();
-
-    //overlap and deduplication for once nice clean list
     for (start, end) in ranges {
         match merged.last_mut() {
-            Some((s, e)) if start <= *e + 1 => *e = (*e).max(end),
-
-            //push a new new list if seperate
+            Some((s, e)) if start <= *e + 1 => {
+                *e = (*e).max(end);
+            }
             _ => merged.push((start, end)),
         }
     }
 
-    let mut count = 0;
-
-    let mut total_fresh = 0;
-    for (start, end) in &merged {
-        total_fresh += end - start + 1;
-    }
+    let total_fresh: i64 = merged.iter().map(|(s, e)| e - s + 1).sum();
     println!("total fresh {}", total_fresh);
 
+    let mut count = 0;
+
     for value in values {
-        //the input list was soooooooooo large i decided to go with binary search
-        let found = merged.binary_search_by(|&(first, last)| {
-            if value < first {
-                std::cmp::Ordering::Greater
-            }
-            else if value > last {
-                std::cmp::Ordering::Less
-            }
-            else { std::cmp::Ordering::Equal }
-        }).is_ok();
+        let found = merged
+            .binary_search_by(|&(first, last)| {
+                if value < first {
+                    std::cmp::Ordering::Greater
+                } else if value > last {
+                    std::cmp::Ordering::Less
+                } else {
+                    std::cmp::Ordering::Equal
+                }
+            })
+            .is_ok();
 
         if found {
             count += 1;
