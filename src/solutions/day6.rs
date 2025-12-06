@@ -13,76 +13,76 @@ struct Problem {
 }
 
 pub fn run() {
-    let rows = read_file_to_list("src/Problems/day6.txt");
+    let rows: Vec<String> = read_file_to_list("src/Problems/day6.txt");
 
     if rows.is_empty() {
         println!("Input file is empty.");
         return;
     }
 
-    let max_width = rows.iter().map(|s| s.len()).max().unwrap_or(0);
-    let grid: Vec<Vec<char>> = rows.iter()
+    let max_width: usize = rows.iter().map(|s| s.len()).max().unwrap_or(0);
+
+    let grid: Vec<Vec<char>> = rows
+        .iter()
         .map(|s| format!("{:width$}", s, width = max_width).chars().collect())
         .collect();
 
-    let operator_row_idx = grid.iter()
+    let op_row: usize = grid
+        .iter()
         .position(|row| row.contains(&'*') || row.contains(&'+'))
         .expect("No operator row found");
 
-    let mut grand_total: i64 = 0;
-
-    let mut current_block_cols: Vec<usize> = Vec::new();
-
-    for col in 0..max_width {
-        let is_empty_col = (0..=operator_row_idx).all(|row| grid[row][col] == ' ');
-
-        if is_empty_col {
-            if !current_block_cols.is_empty() {
-                grand_total += solve_block(&grid, &current_block_cols, operator_row_idx);
-                current_block_cols.clear();
+    let values: Vec<Vec<usize>> = (0..max_width)
+        .scan(Vec::<usize>::new(), |current_block, col| {
+            let is_empty: bool = (0..=op_row).all(|row| grid[row][col] == ' ');
+            if is_empty {
+                if current_block.is_empty() {
+                    Some(None)
+                } else {
+                    let block: Vec<usize> = current_block.clone();
+                    current_block.clear();
+                    Some(Some(block))
+                }
+            } else {
+                current_block.push(col);
+                Some(None)
             }
-        } else {
-            current_block_cols.push(col);
-        }
-    }
+        })
+        .filter_map(|x| x)
+        .collect();
 
-    if !current_block_cols.is_empty() {
-        grand_total += solve_block(&grid, &current_block_cols, operator_row_idx);
-    }
+    let total: i64 = values
+        .iter()
+        .map(|cols: &Vec<usize>| -> i64 {
+            let operator: Operator = cols
+                .iter()
+                .filter_map(|&col| match grid[op_row][col] {
+                    '+' => Some(Operator::Add),
+                    '*' => Some(Operator::Multiply),
+                    _ => None,
+                })
+                .next()
+                .expect("Problem block missing operator");
 
-    println!("=== Grand Total = {} ===", grand_total);
-}
+            let numbers: Vec<i64> = cols
+                .iter()
+                .filter_map(|&col| {
+                    let num_str: String = (0..op_row)
+                        .filter_map(|row| {
+                            let c: char = grid[row][col];
+                            if c.is_digit(10) { Some(c) } else { None }
+                        })
+                        .collect();
+                    if num_str.is_empty() { None } else { Some(num_str.parse::<i64>().unwrap()) }
+                })
+                .collect();
 
-fn solve_block(grid: &[Vec<char>], cols: &[usize], op_row_idx: usize) -> i64 {
-    let mut operator = None;
-    for &col in cols {
-        let char_at_op = grid[op_row_idx][col];
-        if char_at_op == '+' {
-            operator = Some(Operator::Add);
-        } else if char_at_op == '*' {
-            operator = Some(Operator::Multiply);
-        }
-    }
-
-    let operator = operator.expect("Problem block missing operator");
-
-    let mut numbers: Vec<i64> = Vec::new();
-
-    for &col in cols {
-        let mut num_str = String::new();
-        for row in 0..op_row_idx {
-            let c = grid[row][col];
-            if c.is_digit(10) {
-                num_str.push(c);
+            match operator {
+                Operator::Add => numbers.iter().sum(),
+                Operator::Multiply => numbers.iter().product(),
             }
-        }
-        if !num_str.is_empty() {
-            numbers.push(num_str.parse::<i64>().unwrap());
-        }
-    }
+        })
+        .sum();
 
-    match operator {
-        Operator::Add => numbers.iter().sum(),
-        Operator::Multiply => numbers.iter().product(),
-    }
+    println!("{} ", total);
 }
