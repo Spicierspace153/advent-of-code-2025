@@ -1,9 +1,9 @@
-use std::io::repeat;
-use std::str::Chars;
-use crate::utils::file_utils::{read_file, read_file_to_list};
+use crate::utils::file_utils::read_file_to_list;
+
 pub fn run() {
     let rows = read_file_to_list("src/Problems/day6.txt");
-    let raw_numbers: Vec<&String> = rows.iter().take(4).collect();
+
+    let raw_numbers: Vec<&String> = rows.iter().take(3).collect();
     let numbers: Vec<Vec<i64>> = raw_numbers
         .iter()
         .map(|row| {
@@ -25,15 +25,28 @@ pub fn run() {
 
     let mut total: i64 = 0;
 
-    for (i, &token) in tokens.iter().enumerate() {
-        let column_values: Vec<i64> = numbers.iter().map(|row| row[i]).collect();
-        let column_result = match token {
-            '*' => column_values.iter().product(),
-            '+' => column_values.iter().sum(),
-            _ => 0,
-        };
-        
-        total += column_result;
+    for i in (0..tokens.len()).rev() {
+        let column_strings: Vec<String> = numbers
+            .iter()
+            .map(|row| row[i].to_string())
+            .collect();
+
+        let max_length = column_strings.iter().map(|s| s.len()).max().unwrap();
+
+        let padded: Vec<String> = column_strings
+            .iter()
+            .map(|s| format!("{:0<width$}", s, width = max_length))
+            .collect();
+
+        let split_digits: Vec<Vec<char>> = padded
+            .iter()
+            .map(|s| s.chars().collect())
+            .collect();
+
+        for j in 0..max_length {
+            let digits: String = split_digits.iter().map(|row| row[j]).collect();
+            println!("{}", digits);
+        }
     }
 
     println!("Grand total: {}", total);
