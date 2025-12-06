@@ -1,53 +1,88 @@
 use crate::utils::file_utils::read_file_to_list;
 
+#[derive(Debug, Clone, Copy)]
+enum Operator {
+    Multiply,
+    Add,
+}
+
+#[derive(Debug)]
+struct Problem {
+    numbers: Vec<i64>,
+    operator: Operator,
+}
+
 pub fn run() {
     let rows = read_file_to_list("src/Problems/day6.txt");
 
-    let raw_numbers: Vec<&String> = rows.iter().take(3).collect();
-    let numbers: Vec<Vec<i64>> = raw_numbers
-        .iter()
-        .map(|row| {
-            row.split_whitespace()
-                .map(|x| x.parse::<i64>().unwrap())
-                .collect()
-        })
+    if rows.is_empty() {
+        println!("Input file is empty.");
+        return;
+    }
+
+    let max_width = rows.iter().map(|s| s.len()).max().unwrap_or(0);
+    let grid: Vec<Vec<char>> = rows.iter()
+        .map(|s| format!("{:width$}", s, width = max_width).chars().collect())
         .collect();
 
-    let tokens = rows
-        .iter()
-        .rev()
-        .take(1)
-        .flat_map(|s| s.chars())
-        .filter(|c| !c.is_whitespace())
-        .collect::<Vec<char>>();
+    let operator_row_idx = grid.iter()
+        .position(|row| row.contains(&'*') || row.contains(&'+'))
+        .expect("No operator row found");
 
-    println!("Tokens: {:?}", tokens);
+    let mut grand_total: i64 = 0;
 
-    let mut total: i64 = 0;
+    let mut current_block_cols: Vec<usize> = Vec::new();
 
-    for i in (0..tokens.len()).rev() {
-        let column_strings: Vec<String> = numbers
-            .iter()
-            .map(|row| row[i].to_string())
-            .collect();
+    for col in 0..max_width {
+        let is_empty_col = (0..=operator_row_idx).all(|row| grid[row][col] == ' ');
 
-        let max_length = column_strings.iter().map(|s| s.len()).max().unwrap();
-
-        let padded: Vec<String> = column_strings
-            .iter()
-            .map(|s| format!("{:0<width$}", s, width = max_length))
-            .collect();
-
-        let split_digits: Vec<Vec<char>> = padded
-            .iter()
-            .map(|s| s.chars().collect())
-            .collect();
-
-        for j in 0..max_length {
-            let digits: String = split_digits.iter().map(|row| row[j]).collect();
-            println!("{}", digits);
+        if is_empty_col {
+            if !current_block_cols.is_empty() {
+                grand_total += solve_block(&grid, &current_block_cols, operator_row_idx);
+                current_block_cols.clear();
+            }
+        } else {
+            current_block_cols.push(col);
         }
     }
 
-    println!("Grand total: {}", total);
+    if !current_block_cols.is_empty() {
+        grand_total += solve_block(&grid, &current_block_cols, operator_row_idx);
+    }
+
+    println!("=== Grand Total = {} ===", grand_total);
+}
+
+fn solve_block(grid: &[Vec<char>], cols: &[usize], op_row_idx: usize) -> i64 {
+    let mut operator = None;
+    for &col in cols {
+        let char_at_op = grid[op_row_idx][col];
+        if char_at_op == '+' {
+            operator = Some(Operator::Add);
+        } else if char_at_op == '*' {
+            operator = Some(Operator::Multiply);
+        }
+    }
+
+    let operator = operator.expect("Problem block missing operator");
+
+    let mut numbers: Vec<i64> = Vec::new();
+
+    for &col in cols {
+        let mut num_str = String::new();
+        for row in 0..op_row_idx {
+            let c = grid[row][col];
+            if c.is_digit(10) {
+                num_str.push(c);
+            }
+        }
+        if !num_str.is_empty() {
+            numbers.push(num_str.parse::<i64>().unwrap());
+        }
+    }
+
+    match operator {
+        Operator::Add => numbers.iter().sum(),
+        Operator::Multiply => numbers.iter().product(),
+    }
 }
