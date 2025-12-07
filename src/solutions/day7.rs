@@ -1,4 +1,4 @@
-use std::collections::{HashSet, VecDeque};
+use std::collections::HashSet;
 use crate::utils::file_utils::read_file_to_list;
 
 pub fn run() {
@@ -12,94 +12,71 @@ pub fn run() {
     let rows = grid.len();
     let cols = grid[0].len();
 
-
-    // find the s
-    let (start_r, start_c) = {
-        let mut sr = 0;
-        let mut sc = 0;
-        let mut found = false;
-
-        for r in 0..rows {
-            for c in 0..cols {
-                if grid[r][c] == 'S' {
-                    sr = r;
-                    sc = c;
-                    found = true;
-                    break;
-                }
-            }
-            if found { break; }
-        }
-
-        if !found {
+    let (start_r, start_c) = match (0..rows)
+        .flat_map(|r| (0..cols).map(move |c| (r, c)))
+        .find(|&(r, c)| grid[r][c] == 'S')
+    {
+        Some(pos) => pos,
+        None => {
             println!("0");
             return;
         }
-
-        (sr, sc)
     };
 
-    // simulate beams
-    let mut counted = HashSet::<(usize, usize)>::new();
-    let mut total_splits = 0usize;
+    let mut visited_splitters = HashSet::<(usize, usize)>::new();
+    let mut total_splits = 0;
 
-    let mut next_row_beams = HashSet::<usize>::new();
+    let mut beams: HashSet<usize> = HashSet::new();
     if start_r + 1 < rows {
-        next_row_beams.insert(start_c);
+        beams.insert(start_c);
     }
 
-    //downward simulation
-
     for r in (start_r + 1)..rows {
-        let current_beams = next_row_beams;
-        next_row_beams = HashSet::new();
-
-        let mut queue = VecDeque::<usize>::new();
-        let mut seen = HashSet::<usize>::new();
-
-        for &c in &current_beams {
-            if c < cols && seen.insert(c) {
-                queue.push_back(c);
-            }
+        if beams.is_empty() {
+            break;
         }
 
-        let mut down_cols = HashSet::<usize>::new();
+        let mut next_beams: HashSet<usize> = HashSet::new();
+        let mut new_side_beams: HashSet<usize> = HashSet::new();
 
-        // guh
-        while let Some(c) = queue.pop_front() {
+        for &c in &beams {
             if c >= cols { continue; }
 
-            //lowkeysome of the worst code i have ever written
             match grid[r][c] {
                 '.' | 'S' => {
-                    // Beam passes downward
-                    down_cols.insert(c);
+                    // beam continues downward
+                    next_beams.insert(c);
                 }
                 '^' => {
-                    //split left + right
-                    if counted.insert((r, c)) {
+                    // splitter
+                    if visited_splitters.insert((r, c)) {
                         total_splits += 1;
                     }
-
-                    //mmmmmmmmmm spreadit
-                    if c > 0 && seen.insert(c - 1) {
-                        queue.push_back(c - 1);
+                    if c > 0 {
+                        new_side_beams.insert(c - 1);
                     }
-                    if c + 1 < cols && seen.insert(c + 1) {
-                        queue.push_back(c + 1);
+                    if c + 1 < cols {
+                        new_side_beams.insert(c + 1);
                     }
                 }
                 _ => {
-                    //other characters
-                    down_cols.insert(c);
+                    // treat as empty
+                    next_beams.insert(c);
                 }
             }
         }
 
-        next_row_beams = down_cols;
-        if next_row_beams.is_empty() {
-            break;
+        for c in new_side_beams {
+            if grid[r][c] == '^' {
+                if visited_splitters.insert((r, c)) {
+                    total_splits += 1;
+                }
+            } else {
+                next_beams.insert(c);
+            }
         }
+
+        beams = next_beams;
     }
 
     println!("Total splits: {}", total_splits);
