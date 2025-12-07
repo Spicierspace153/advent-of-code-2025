@@ -13,6 +13,7 @@ pub fn run() {
     let cols = grid[0].len();
 
 
+    // find the s
     let (start_r, start_c) = {
         let mut sr = 0;
         let mut sc = 0;
@@ -38,6 +39,7 @@ pub fn run() {
         (sr, sc)
     };
 
+    // simulate beams
     let mut counted = HashSet::<(usize, usize)>::new();
     let mut total_splits = 0usize;
 
@@ -46,6 +48,7 @@ pub fn run() {
         next_row_beams.insert(start_c);
     }
 
+    //downward simulation
 
     for r in (start_r + 1)..rows {
         let current_beams = next_row_beams;
@@ -62,19 +65,23 @@ pub fn run() {
 
         let mut down_cols = HashSet::<usize>::new();
 
+        // guh
         while let Some(c) = queue.pop_front() {
             if c >= cols { continue; }
 
+            //lowkeysome of the worst code i have ever written
             match grid[r][c] {
                 '.' | 'S' => {
                     // Beam passes downward
                     down_cols.insert(c);
                 }
                 '^' => {
+                    //split left + right
                     if counted.insert((r, c)) {
                         total_splits += 1;
                     }
 
+                    //mmmmmmmmmm spreadit
                     if c > 0 && seen.insert(c - 1) {
                         queue.push_back(c - 1);
                     }
@@ -83,6 +90,7 @@ pub fn run() {
                     }
                 }
                 _ => {
+                    //other characters
                     down_cols.insert(c);
                 }
             }
